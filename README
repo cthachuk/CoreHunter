@@ -1,0 +1,46 @@
+# Overview
+
+This is the source code for the Core Hunter project <http://corehunter.org>
+
+Core Hunter is a library for selecting and analysing genetic
+resources.  The source code is currently organized into a libary, and
+a two command line interface (CLI) applciations using the library.
+
+Core Hunter library:
+./corehunter-lib/*
+
+Core Hunter CLI application:
+./corehunter-cli/*
+
+Core Analyser CLI application:
+./coreanalyser-cli/*
+
+
+# Building the source
+
+The project currently required Maven, and any JDK version 1.5+.
+
+On a unix/linux flavoured OS:
+
+    ./build.sh
+
+On windows:
+
+    mvn package
+
+The former simply copies the resulting JAR files into a bin directory of the project.
+
+
+# An example of running the CoreHunter CLI application
+
+Assuming CoreHunter was built with `build.sh`:
+
+    java -jar bin/corehunter-cli.jar -MR 0.7 -SH 0.3 data/examples/bul.csv mycoresubset.dat
+
+More details and a manual can be found at http://corehunter.org
+
+
+# Questions
+
+Any questions about Core Hunter should be directed to Chris Thachuk
+<chris DOT thachuk AT gmail DOT com>
