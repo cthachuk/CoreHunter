@@ -1,25 +1,20 @@
-//  Copyright 2008,2011 Chris Thachuk
+// Copyright 2008 Chris Thachuk (chris.thachuk@gmail.com)
 //
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
+// This file is part of Core Hunter.
 
-package org.cimmyt.corehunter.textui;
+// Core Hunter is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
+// Core Hunter is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Core Hunter.  If not, see <http://www.gnu.org/licenses/>.
+
 import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
@@ -28,7 +23,6 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
@@ -41,7 +35,7 @@ import org.cimmyt.corehunter.measures.*;
  * @author Chris Thachuk <chris.thachuk@gmail.com>
  */
 public final class CoreanalyserTextRunner {
-    private final String[] measureNames = {"MR","CE","SH", "HE", "NE", "PN", "CV"};
+    private final String[] measureNames = {"MR", "MRmin", "CE", "CEmin", "SH", "HE", "NE", "PN", "CV"};
 
     private Options opts;
     private String[] collectionFiles;
@@ -77,22 +71,6 @@ public final class CoreanalyserTextRunner {
 	System.out.println("");
 
 	for(int i=0; i<collectionFiles.length; i++) {
-	    // create a pseudo-index and add user specified measure to it, with respective weights
-	    PseudoMeasure pm = new PseudoMeasure();
-	    for(int j=0; j<measureNames.length; j++) {
-		String measure = measureNames[j];
-		try {
-		    pm.addMeasure(MeasureFactory.createMeasure(measure), 1.0);
-		} catch(DuplicateMeasureException dme) {
-		    System.err.println("");
-		    System.err.println(dme.getMessage());
-		    System.exit(0);
-		} catch(UnknownMeasureException ume) {
-		    System.err.println("");
-		    System.err.println(ume.getMessage());
-		    System.exit(0);
-		}
-	    }
 
 	    // try to create dataset
 	    SSRDataset ds = SSRDataset.createFromFile(collectionFiles[i]);
@@ -107,6 +85,23 @@ public final class CoreanalyserTextRunner {
 	    // create an accession collection
 	    AccessionCollection ac = new AccessionCollection();
 	    ac.addDataset(ds);
+
+            // create a pseudo-index and add user specified measure to it, with respective weights
+	    PseudoMeasure pm = new PseudoMeasure();
+	    for(int j=0; j<measureNames.length; j++) {
+		String measure = measureNames[j];
+		try {
+		    pm.addMeasure(MeasureFactory.createMeasure(measure, ac.size()), 1.0);
+		} catch(DuplicateMeasureException dme) {
+		    System.err.println("");
+		    System.err.println(dme.getMessage());
+		    System.exit(0);
+		} catch(UnknownMeasureException ume) {
+		    System.err.println("");
+		    System.err.println(ume.getMessage());
+		    System.exit(0);
+		}
+	    }
 	    
 	    Map<String, Double> scores = pm.componentScores(ac.getAccessions());
 	    

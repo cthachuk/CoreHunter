@@ -27,7 +27,7 @@ public final class TestSSRMeasures {
 
 	@Before
 	public void setUpBefore() throws Exception {
-		mr = new ModifiedRogersDistance("MR", "Modified Rogers Distance");
+		mr = new ModifiedRogersDistance(4);
 		
 		Collection<String> accessionNames = new HashSet<String>();
 		accessionNames.add("A1");

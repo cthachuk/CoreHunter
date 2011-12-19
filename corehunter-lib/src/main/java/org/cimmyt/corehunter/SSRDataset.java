@@ -1,16 +1,19 @@
-//  Copyright 2008,2011 Chris Thachuk
+// Copyright 2008 Chris Thachuk (chris.thachuk@gmail.com)
 //
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
+// This file is part of Core Hunter.
+
+// Core Hunter is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Core Hunter is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Core Hunter.  If not, see <http://www.gnu.org/licenses/>.
 
 package org.cimmyt.corehunter;
 
@@ -41,6 +44,8 @@ public final class SSRDataset extends AccessionDataset<List<Double>> {
     protected List<List<String>> alleleName;
     protected Map<String, List<String>> markersToAlleles;
 
+    protected Map<String, Double> extDistances;
+
     public SSRDataset(Collection<String> accessions, Map<String, List<String>> markersToAlleles) {
 	super(accessions, markersToAlleles.keySet());
 		
@@ -70,6 +75,9 @@ public final class SSRDataset extends AccessionDataset<List<Double>> {
 		
 	// initialize the allele list to missing (null) values
 	initAlleles();
+
+        // initialize external distance map
+        extDistances = new HashMap<String, Double>(accessionCount);
     }
 
     public static SSRDataset createFromFile(String filename) {
@@ -97,9 +105,9 @@ public final class SSRDataset extends AccessionDataset<List<Double>> {
             int lineNumber = 1;
 	    while (itr.hasNext()) {
 		nextLine = (String [])itr.next();
+                lineNumber++;
 
                 if (nextLine.length < 2) {
-                  lineNumber++;
                   System.err.println("Dataset is not properly formatted on line " + lineNumber);
                   System.err.println("Please refer to the CoreHunter manual.  " +
                                      "There should be a marker name and allele name separated by a comma " +
@@ -108,13 +116,19 @@ public final class SSRDataset extends AccessionDataset<List<Double>> {
                   return null;
                 }
 
-		String marker = nextLine[0];
-		String allele = nextLine[1];
+                // Ignore (possible) external distances line at this point
+                if (!(nextLine[0].equalsIgnoreCase("DIST"))){
 
-		if (!markersToAlleles.containsKey(marker)) {
-		    markersToAlleles.put(marker, new ArrayList<String>());
-		}
-		markersToAlleles.get(marker).add(allele);
+                    // Normal marker/allele line
+                    String marker = nextLine[0];
+                    String allele = nextLine[1];
+
+                    if (!markersToAlleles.containsKey(marker)) {
+                        markersToAlleles.put(marker, new ArrayList<String>());
+                    }
+                    markersToAlleles.get(marker).add(allele);
+                    
+                }
 	    }
 
 	    if (accessions.size()<2) {
@@ -136,34 +150,56 @@ public final class SSRDataset extends AccessionDataset<List<Double>> {
 	    // add the allele values for each genotype
 	    while (itr.hasNext()) {
                 nextLine = (String [])itr.next();
-                String marker = nextLine[0];
-                String allele = nextLine[1];
 
-		for(int i=2; i<nextLine.length; i++) {
-		    if (nextLine[i].equals("")) continue;
-		    String accession = accessions.get(i-2);
-		    Double alleleValue = null;
-		    
-		    try {
-			alleleValue = new Double(nextLine[i]);
-			ds.setValue(accession, marker, allele, alleleValue);
-		    } catch(NumberFormatException nfe) {
-			System.err.println("");
-			System.err.println( nfe.getMessage() );
-			System.err.println("");
-			System.err.println("Invalid allele value for accession '" + accession +
-					   "' marker '" + marker + "' allele '" + allele + "'");
-			return null;
-		    } catch(UnknownAccessionException uae) {
-			System.err.println("");
-			System.err.println("bug found.  please contact authors");
-			return null;
-		    } catch(UnknownTraitException ute) {
-			System.err.println("");
-			System.err.println("bug found.  please contact authors");
-			return null;
-		    }
-		}
+                // Check for external distances line
+                if(nextLine[0].equalsIgnoreCase("DIST")){
+                    // ext. dist. line
+                    for(int i=2; i<nextLine.length; i++){
+                        String accession = accessions.get(i-2);
+                        try{
+                            Double extDist = new Double(nextLine[i]);
+                            ds.setExternalDistance(accession, extDist);
+                        } catch (NumberFormatException nfe){
+                            System.err.println("");
+                            System.err.println( nfe.getMessage() );
+                            System.err.println("");
+                            System.err.println("Invalid external distance value for accession '" + accession);
+                            return null;
+                        }
+                    }
+                } else {
+                    // normal marker/allele line
+                    String marker = nextLine[0];
+                    String allele = nextLine[1];
+
+                    for(int i=2; i<nextLine.length; i++) {
+                        if (nextLine[i].equals("")){
+                            continue;
+                        }
+                        String accession = accessions.get(i-2);
+                        Double alleleValue = null;
+
+                        try {
+                            alleleValue = new Double(nextLine[i]);
+                            ds.setValue(accession, marker, allele, alleleValue);
+                        } catch(NumberFormatException nfe) {
+                            System.err.println("");
+                            System.err.println( nfe.getMessage() );
+                            System.err.println("");
+                            System.err.println("Invalid allele value for accession '" + accession +
+                                               "' marker '" + marker + "' allele '" + allele + "'");
+                            return null;
+                        } catch(UnknownAccessionException uae) {
+                            System.err.println("");
+                            System.err.println("bug found.  please contact authors");
+                            return null;
+                        } catch(UnknownTraitException ute) {
+                            System.err.println("");
+                            System.err.println("bug found.  please contact authors");
+                            return null;
+                        }
+                    }
+                }
 	    }
 
  	} catch(IOException ioe) {
@@ -349,5 +385,17 @@ public final class SSRDataset extends AccessionDataset<List<Double>> {
 	//List<Double> alleleValues = markerValues.get(marker);	
 	dataMatrix.get(accession).get(marker).set(allele, alleleValue);
 	//alleleValues.set(allele, alleleValue);
+    }
+
+    public void setExternalDistance(String accession, Double extDist){
+        extDistances.put(accession, extDist);
+    }
+
+    public Double getExtDistance(String accession){
+        if(extDistances.containsKey(accession)){
+            return extDistances.get(accession);
+        } else {
+            return null;
+        }
     }
 }
