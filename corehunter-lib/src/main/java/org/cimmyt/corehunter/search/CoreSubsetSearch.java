@@ -1075,16 +1075,11 @@ public final class CoreSubsetSearch {
 
     public static AccessionCollection mixedReplicaSearch(AccessionCollection ac, PseudoMeasure pm, int sampleMin,
                                                          int sampleMax, double runtime, double minProg, double stuckTime,
-                                                         int minNrOfReplicas, int nrOfTabuSteps, int nrOfChildren,
-                                                         int tournamentSize,int tabuListSize, boolean stratifiedStart,
+                                                         int nrOfTabuReplicas, int nrOfNonTabuReplicas, int roundsWithoutTabu,
+                                                         int nrOfTabuSteps, int tournamentSize,int tabuListSize, boolean stratifiedStart,
                                                          boolean stratifiedMerge, int boostNr, double boostMinProg,
                                                          int boostTimeFactor, double minBoostTime, double minSimAnTemp,
                                                          double maxSimAnTemp) {
-
-        final int TMP_NR_OF_TABU_REP = 2;
-        final int TMP_NR_OF_NONTABU_REP = 3;
-
-        final int ROUNDS_WITHOUT_TABU = 10;
 
         final int NR_OF_CLUSTERS = sampleMax;
         final double STRAT_MERGE_PROB = 0.5;
@@ -1124,9 +1119,9 @@ public final class CoreSubsetSearch {
         }
 
         // create, init and store initial replicas (local search)
-        List<Replica> replicas = new ArrayList<Replica>(TMP_NR_OF_NONTABU_REP);
+        List<Replica> replicas = new ArrayList<Replica>(nrOfNonTabuReplicas);
         // add Local Search Replicas until minimum nr reached
-        for (int i=0; i< TMP_NR_OF_NONTABU_REP; i++){
+        for (int i=0; i< nrOfNonTabuReplicas; i++){
             Replica rep;
 
             // initially, create some extra LS Replica
@@ -1142,17 +1137,17 @@ public final class CoreSubsetSearch {
         }
         
         int nrOfTabus = 0;
-        int nrOfNonTabus = TMP_NR_OF_NONTABU_REP;
+        int nrOfNonTabus = nrOfNonTabuReplicas;
         int nrStuck = 0;
 
         // create and init one LR Semi replica
         LRReplica lrrep = new LRReplica(ac, pm, NR_OF_LR_STEPS, -1, sampleMin, sampleMax, LR_L, LR_R, LR_EXH_START);
         lrrep.init();
 
-        List<Future> localAndREMCfutures = new ArrayList<Future>(TMP_NR_OF_NONTABU_REP);
-        List<Future> tabuFutures = new ArrayList<Future>(TMP_NR_OF_TABU_REP);
-        List<List<Accession>> parents = new ArrayList<List<Accession>>(2*nrOfChildren);
-        List<List<Accession>> children = new ArrayList<List<Accession>>(nrOfChildren);
+        List<Future> localAndREMCfutures = new ArrayList<Future>(nrOfNonTabuReplicas);
+        List<Future> tabuFutures = new ArrayList<Future>(nrOfTabuReplicas);
+        List<List<Accession>> parents = new ArrayList<List<Accession>>();
+        List<List<Accession>> children = new ArrayList<List<Accession>>();
 
         // create thread pool
         final ThreadGroup threadGroup = new ThreadGroup("replicaThreadGroup");
@@ -1206,7 +1201,7 @@ public final class CoreSubsetSearch {
             }
             //System.out.println("[tabus submitted]");
 
-            while(firstRounds < ROUNDS_WITHOUT_TABU || tabuReplicasBusy(tabuFutures)){
+            while(firstRounds < roundsWithoutTabu || tabuReplicasBusy(tabuFutures)){
 
                 //System.out.println("LR steps done: " + lrrep.getCurSteps());
 
@@ -1351,7 +1346,7 @@ public final class CoreSubsetSearch {
 
                 // check boost time
                 if((System.currentTimeMillis()-sTime-Math.max(lastImprTime, lastBoostTime))/1000.0 > Math.max(boostTime, minBoostTime)
-                        && replicas.size() == TMP_NR_OF_NONTABU_REP + TMP_NR_OF_TABU_REP){ // do not boost if previous boost effect still visible!
+                        && replicas.size() == nrOfNonTabuReplicas + nrOfTabuReplicas){ // do not boost if previous boost effect still visible!
                     lastBoostTime = System.currentTimeMillis()-sTime;
                     boostReplicas(replicas, boostNr, ac, pm, randNh, NR_OF_LS_STEPS, sampleMin, sampleMax);
                     nrOfNonTabus += boostNr;
@@ -1362,7 +1357,7 @@ public final class CoreSubsetSearch {
                 //System.out.println("[Possible boost done]");
 
                 // "Genetic" cross-over to create new REMC (non-tabu) replicas
-                int nonTabuChildren = TMP_NR_OF_NONTABU_REP - (nrOfNonTabus-nrStuck);
+                int nonTabuChildren = nrOfNonTabuReplicas - (nrOfNonTabus-nrStuck);
                 //System.out.println("[non-tabu] Stuck: " + nrStuck + " - Current: " + nrOfNonTabus + " - Create: " + nonTabuChildren);
                 if(nonTabuChildren > 0){
                     // Select parents from non-tabu replicas only! (tabus are still being manipulated, so skip these)
@@ -1446,7 +1441,7 @@ public final class CoreSubsetSearch {
             }
 
             // Create new tabus by merging current results (from all replicas!!!)
-            int tabuChildren = TMP_NR_OF_TABU_REP - (nrOfTabus-nrStuck);
+            int tabuChildren = nrOfTabuReplicas - (nrOfTabus-nrStuck);
             //System.out.println("[tabu] Stuck: " + nrStuck + " - Current: " + nrOfTabus + " - Create: " + tabuChildren);
             if(tabuChildren > 0){
                 // Select parents from all replicas!

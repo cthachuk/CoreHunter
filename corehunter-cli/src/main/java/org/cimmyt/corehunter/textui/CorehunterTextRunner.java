@@ -68,8 +68,9 @@ public final class CorehunterTextRunner {
     private final int DEFAULT_MERGEREP_TOURNAMENT_SIZE = 2;
     private final int DEFAULT_MERGEREP_NR_OF_STEPS = 50;
 
-    private final int DEFAULT_MIXREP_NR_OF_REPLICAS = 6;
-    private final int DEFAULT_MIXREP_NR_OF_CHILDREN = 1;
+    private final int DEFAULT_MIXREP_NR_OF_TABU_REPLICAS = 2;
+    private final int DEFAULT_MIXREP_NR_OF_NON_TABU_REPLICAS = 3;
+    private final int DEFAULT_MIXREP_ROUNDS_WITHOUT_TABU = 10;
     private final int DEFAULT_MIXREP_TOURNAMENT_SIZE = 2;
     private final int DEFAULT_MIXREP_NR_OF_TABU_STEPS = 5;
     private final int DEFAULT_MIXREP_BOOST_NR = 2;
@@ -121,9 +122,10 @@ public final class CorehunterTextRunner {
     private int mergerepNrOfChildren;
     private int mergerepTournamentSize;
 
-    private int mixrepNrOfReplicas;
+    private int mixrepNrOfTabuReplicas;
+    private int mixrepNrOfNonTabuReplicas;
+    private int mixrepRoundsWithoutTabu;
     private int mixrepNrOfTabuSteps;
-    private int mixrepNrOfChildren;
     private int mixrepTournamentSize;
     private int mixrepBoostNr;
     private double mixrepBoostMinProg;
@@ -195,8 +197,9 @@ public final class CorehunterTextRunner {
         mergerepTournamentSize = DEFAULT_MERGEREP_TOURNAMENT_SIZE;
         mergerepNrOfSteps = DEFAULT_MERGEREP_NR_OF_STEPS;
 
-        mixrepNrOfReplicas = DEFAULT_MIXREP_NR_OF_REPLICAS;
-        mixrepNrOfChildren = DEFAULT_MIXREP_NR_OF_CHILDREN;
+        mixrepNrOfTabuReplicas = DEFAULT_MIXREP_NR_OF_TABU_REPLICAS;
+        mixrepNrOfNonTabuReplicas = DEFAULT_MIXREP_NR_OF_NON_TABU_REPLICAS;
+        mixrepRoundsWithoutTabu = DEFAULT_MIXREP_ROUNDS_WITHOUT_TABU;
         mixrepTournamentSize = DEFAULT_MIXREP_TOURNAMENT_SIZE;
         mixrepNrOfTabuSteps = DEFAULT_MIXREP_NR_OF_TABU_STEPS;
         mixrepBoostNr = DEFAULT_MIXREP_BOOST_NR;
@@ -417,9 +420,9 @@ public final class CorehunterTextRunner {
             } else if(mixedReplicaSearch){
                 System.out.println("---\nParallel Mixed Replica Search\n---");
                 core = CoreSubsetSearch.mixedReplicaSearch(ac, pm, sampleMin, sampleMax, runtime,
-                                            minProg, stuckTime, mixrepNrOfReplicas, mixrepNrOfTabuSteps,
-                                            mixrepNrOfChildren, mixrepTournamentSize, tabuListSize, false, false,
-                                            mixrepBoostNr, mixrepBoostMinProg, mixrepBoostTimeFactor, mixrepMinBoostTime,
+                                            minProg, stuckTime, mixrepNrOfTabuReplicas, mixrepNrOfNonTabuReplicas,
+                                            mixrepRoundsWithoutTabu, mixrepNrOfTabuSteps, mixrepTournamentSize, tabuListSize,
+                                            false, false, mixrepBoostNr, mixrepBoostMinProg, mixrepBoostTimeFactor, mixrepMinBoostTime,
                                             mixrepMinSimAnTemp, mixrepMaxSimAnTemp);
             } else if (localSearch) {
                 System.out.println("---\nLocal Search\n---");
@@ -617,15 +620,20 @@ public final class CorehunterTextRunner {
 			      .create("mc_steps") );
 
         // set up the Mixed Replica advanced search option group
+        mixrepSearchOpts.addOption( OptionBuilder.withArgName("tr")
+			      .hasArg()
+			      .withDescription("retain tr tabu replicas during search, defaults to " + DEFAULT_MIXREP_NR_OF_TABU_REPLICAS)
+			      .create("tabu_replicas") );
+        
+        mixrepSearchOpts.addOption( OptionBuilder.withArgName("ntr")
+			      .hasArg()
+			      .withDescription("retain ntr non-tabu replicas (Local Search, SimAn) during search, defaults to " + DEFAULT_MIXREP_NR_OF_NON_TABU_REPLICAS)
+			      .create("non_tabu_replicas") );
+        
         mixrepSearchOpts.addOption( OptionBuilder.withArgName("r")
 			      .hasArg()
-			      .withDescription("always retain at least r replicas during search, defaults to " + DEFAULT_MIXREP_NR_OF_REPLICAS)
-			      .create("replicas") );
-
-        mixrepSearchOpts.addOption( OptionBuilder.withArgName("c")
-			      .hasArg()
-			      .withDescription("create c new children replicas at each escape move, defaults to " +  DEFAULT_MIXREP_NR_OF_CHILDREN)
-			      .create("children") );
+			      .withDescription("wait for startup of tabu replicas until after the first r search rounds, defaults to " + DEFAULT_MIXREP_ROUNDS_WITHOUT_TABU)
+			      .create("rounds_without_tabu") );
 
         mixrepSearchOpts.addOption( OptionBuilder.withArgName("t")
 			      .hasArg()
@@ -924,12 +932,10 @@ public final class CorehunterTextRunner {
 
             // check if a search type is selected
             if(j==0){
-                System.err.println("\nPlease select search type.");
-                return false;
-            }
-
-            // check for multiple search types
-            if(j>1){
+                // select default search type = MixRep
+                mixedReplicaSearch = true;
+            } else if(j>1){
+                // multiple search types selected
                 System.err.println("\nMultiple search types selected. Please select only one.");
                 return false;
             }
@@ -941,7 +947,6 @@ public final class CorehunterTextRunner {
 		try {
 		    replicas = Integer.parseInt(cl.getOptionValue("replicas"));
                     mergerepNrOfReplicas = replicas; // in case of Merge Replica Search
-                    mixrepNrOfReplicas = replicas; // in case of Mixed Replica Search
 		    if (replicas < 1 || replicas > 100) throw new NumberFormatException();
 		} catch(NumberFormatException nfe) {
 		    System.err.println("\nreplicas must be a positive integer in the range [1..100]");
@@ -1017,7 +1022,6 @@ public final class CorehunterTextRunner {
 		try {
 		    genNrOfChildren = Integer.parseInt(cl.getOptionValue("children"));
                     mergerepNrOfChildren = genNrOfChildren; // in case of Merge Replica Search
-                    mixrepNrOfChildren = genNrOfChildren; // in case of Mixed Replica Search
 		    if (genNrOfChildren < 1) throw new NumberFormatException();
 		} catch(NumberFormatException nfe) {
 		    System.err.println("\nchildren must be a postive integer >= 1");
@@ -1064,8 +1068,39 @@ public final class CorehunterTextRunner {
 
             // check Mixed Replica Search advanced options
             
-            // check for replicas --> see REMC
+            // check for tabu_replicas
+            if (cl.hasOption("tabu_replicas")) {
+		try {
+		    mixrepNrOfTabuReplicas = Integer.parseInt(cl.getOptionValue("tabu_replicas"));
+		    if (mixrepNrOfTabuReplicas < 1 || mixrepNrOfTabuReplicas > 100) throw new NumberFormatException();
+		} catch(NumberFormatException nfe) {
+		    System.err.println("\ntabu_replicas must be a positive integer in the range [1..100]");
+		    return false;
+		}
+	    }
+            
+            // check for non_tabu_replicas
+            if (cl.hasOption("non_tabu_replicas")) {
+		try {
+		    mixrepNrOfNonTabuReplicas = Integer.parseInt(cl.getOptionValue("non_tabu_replicas"));
+		    if (mixrepNrOfNonTabuReplicas < 1 || mixrepNrOfNonTabuReplicas > 100) throw new NumberFormatException();
+		} catch(NumberFormatException nfe) {
+		    System.err.println("\nnon_tabu_replicas must be a positive integer in the range [1..100]");
+		    return false;
+		}
+	    }
 
+            // check for rounds_without_tabu
+	    if (cl.hasOption("rounds_without_tabu")) {
+		try {
+		    mixrepRoundsWithoutTabu = Integer.parseInt(cl.getOptionValue("rounds_without_tabu"));
+		    if (mixrepRoundsWithoutTabu < 0 || mixrepRoundsWithoutTabu > 1000000) throw new NumberFormatException();
+		} catch(NumberFormatException nfe) {
+		    System.err.println("\nrounds_without_tabu must be an integer in the range [0..1000000]");
+		    return false;
+		}
+	    }
+            
             // check for tabu_steps
 	    if (cl.hasOption("tabu_steps")) {
 		try {
