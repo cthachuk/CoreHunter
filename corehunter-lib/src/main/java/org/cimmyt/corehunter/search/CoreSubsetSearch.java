@@ -1201,7 +1201,8 @@ public final class CoreSubsetSearch {
             }
             //System.out.println("[tabus submitted]");
 
-            while(firstRounds < roundsWithoutTabu || tabuReplicasBusy(tabuFutures)){
+            while((firstRounds < roundsWithoutTabu || tabuReplicasBusy(tabuFutures))
+                    && cont && System.currentTimeMillis() < eTime){
 
                 //System.out.println("LR steps done: " + lrrep.getCurSteps());
 
@@ -1408,68 +1409,74 @@ public final class CoreSubsetSearch {
                 //System.out.println("[Non-tabu round finished]");
             }
 
-            // Tabu replicas have finished --> check for improvements & count stuck tabus
-            nrStuck = 0;
-            Iterator<Replica> itr = replicas.iterator();
-            while(itr.hasNext()){
-                Replica rep = itr.next();
-                if(rep.shortType().equals("Tabu")){
-                    // check for better solution
-                    if (rep.getBestScore() > bestScore
-                             || (rep.getBestScore() == bestScore && rep.getBestCore().size() < bestCore.size())){
+            if(!tabuReplicasBusy(tabuFutures)){
+                // Tabu replicas have finished --> check for improvements & count stuck tabus
+                nrStuck = 0;
+                Iterator<Replica> itr = replicas.iterator();
+                while(itr.hasNext()){
+                    Replica rep = itr.next();
+                    if(rep.shortType().equals("Tabu")){
+                        // check for better solution
+                        if (rep.getBestScore() > bestScore
+                                 || (rep.getBestScore() == bestScore && rep.getBestCore().size() < bestCore.size())){
 
-                        // store better core
-                        bestScore = rep.getBestScore();
-                        bestCore.clear();
-                        bestCore.addAll(rep.getBestCore());
+                            // store better core
+                            bestScore = rep.getBestScore();
+                            bestCore.clear();
+                            bestCore.addAll(rep.getBestCore());
 
-                        impr = true;
-                        lastImprTime = System.currentTimeMillis() - sTime;
-                        System.out.println("best score: " + bestScore + "\tsize: " + bestCore.size() +
-                                           "\ttime: " + lastImprTime/1000.0 +
-                                           "\t#rep: " + replicas.size() + "\tfound by: " + rep.type());
-                        // update progress writer
-                        if(WRITE_PROGRESS_FILE){
-                            pw.updateScore(bestScore);
+                            impr = true;
+                            lastImprTime = System.currentTimeMillis() - sTime;
+                            System.out.println("best score: " + bestScore + "\tsize: " + bestCore.size() +
+                                               "\ttime: " + lastImprTime/1000.0 +
+                                               "\t#rep: " + replicas.size() + "\tfound by: " + rep.type());
+                            // update progress writer
+                            if(WRITE_PROGRESS_FILE){
+                                pw.updateScore(bestScore);
+                            }
+                        }
+                        // count nr of stuck non-tabu reps
+                        if(rep.stuck()){
+                            nrStuck++;
                         }
                     }
-                    // count nr of stuck non-tabu reps
-                    if(rep.stuck()){
-                        nrStuck++;
+                }
+
+                // Create new tabus by merging current results (from all replicas!!!)
+                int tabuChildren = nrOfTabuReplicas - (nrOfTabus-nrStuck);
+                //System.out.println("[tabu] Stuck: " + nrStuck + " - Current: " + nrOfTabus + " - Create: " + tabuChildren);
+                if(tabuChildren > 0){
+                    // Select parents from all replicas!
+                    selectParents(replicas, parents, 2*tabuChildren, tournamentSize, rg);
+                    if(stratifiedMerge && rg.nextDouble() < STRAT_MERGE_PROB){
+                        createNewStratifiedChildren(parents, children, rg, clustering);
+                    } else {
+                        createNewChildren(parents, children, rg);
+                    }
+                    for(List<Accession> child : children){
+                        // new Tabu replicas
+                        int listsize = rg.nextInt(tabuListSize)+1;
+                        Replica rep = new TabuReplica(ac, pm, heurNh.clone(), nrOfTabuSteps, -1, sampleMin, sampleMax, listsize);
+                        nrOfTabus++;
+
+                        rep.init(child);
+                        replicas.add(rep);
                     }
                 }
-            }
 
-            // Create new tabus by merging current results (from all replicas!!!)
-            int tabuChildren = nrOfTabuReplicas - (nrOfTabus-nrStuck);
-            //System.out.println("[tabu] Stuck: " + nrStuck + " - Current: " + nrOfTabus + " - Create: " + tabuChildren);
-            if(tabuChildren > 0){
-                // Select parents from all replicas!
-                selectParents(replicas, parents, 2*tabuChildren, tournamentSize, rg);
-                if(stratifiedMerge && rg.nextDouble() < STRAT_MERGE_PROB){
-                    createNewStratifiedChildren(parents, children, rg, clustering);
-                } else {
-                    createNewChildren(parents, children, rg);
+                // Now permanently remove stuck tabus
+                itr = replicas.iterator();
+                while(itr.hasNext()){
+                    Replica rep = itr.next();
+                    if(rep.stuck() && rep.shortType().equals("Tabu")){
+                        itr.remove();
+                        nrOfTabus--;
+                    }
                 }
-                for(List<Accession> child : children){
-                    // new Tabu replicas
-                    int listsize = rg.nextInt(tabuListSize)+1;
-                    Replica rep = new TabuReplica(ac, pm, heurNh.clone(), nrOfTabuSteps, -1, sampleMin, sampleMax, listsize);
-                    nrOfTabus++;
-
-                    rep.init(child);
-                    replicas.add(rep);
-                }
-            }
-
-            // Now permanently remove stuck tabus
-            itr = replicas.iterator();
-            while(itr.hasNext()){
-                Replica rep = itr.next();
-                if(rep.stuck() && rep.shortType().equals("Tabu")){
-                    itr.remove();
-                    nrOfTabus--;
-                }
+                
+            } else {
+                // Tabu replicas have not finished, which means search was stopped during inner loop
+                // of non-tabu replicas. Search will stop, so don't do anything anymore at this point.
             }
 
         }
