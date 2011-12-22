@@ -1,19 +1,16 @@
-// Copyright 2008 Chris Thachuk (chris.thachuk@gmail.com)
+//  Copyright 2008,2011 Chris Thachuk, Herman De Beukelaer
 //
-// This file is part of Core Hunter.
-
-// Core Hunter is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Core Hunter is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Core Hunter.  If not, see <http://www.gnu.org/licenses/>.
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
 
 package org.cimmyt.corehunter.textui;
 
@@ -232,78 +229,6 @@ public final class CorehunterTextRunner {
 	ac.addDataset(ds);
 
         int collectionSize = ac.size();
-
-        /************** TMP !!!!! (cluster test) ***********************/
-
-        /*
-        long stime = System.currentTimeMillis();
-
-        Clustering clustering = new Clustering(5, new GroupAverageClusterDistance(new ModifiedRogersDistance(collectionSize)));
-        for(Accession a : ac.getAccessions()){
-            clustering.addAccession(a);
-        }
-
-        System.out.println("## Time Used: " + (System.currentTimeMillis()-stime)/1000.0);
-
-        Collection<AccessionCluster> clusters = clustering.getClusters();
-        int blabla=1;
-        for(AccessionCluster cluster : clusters){
-            System.out.println("Cluster size: " + cluster.size());
-            ds.writeToFile("../../examples/test" + blabla + ".csv", cluster.getAccessionNames());
-            blabla++;
-        }    
-
-        if(true){
-            return;
-        }
-        */
-
-        /************** TMP !!!!! (elite selection) ***********************/
-
-        /*
-        System.out.println("Reading elite set...");
-        SSRDataset elite_ds = SSRDataset.createFromFile("../../examples/gen_elite_CH.csv");
-	if(ds == null) {
-	    System.err.println("\nProblem parsing elite dataset file.  Aborting.");
-	    System.exit(0);
-	}
-
-	// create an accession collection
-	AccessionCollection elite_ac = new AccessionCollection();
-	elite_ac.addDataset(elite_ds);
-
-        System.out.println("Dataset size: " + ac.size());
-        System.out.println("Elite size: " + elite_ac.size());
-
-        // compute mean MR distance to elite for each accession
-        List<Accession> acs = ac.getAccessions();
-        Map<Integer, Double> distances = new TreeMap<Integer,Double>();
-        DistanceMeasure mr = new ModifiedRogersDistance(ac.size() + elite_ac.size());
-        for(int i=0; i<acs.size(); i++){
-            Accession a = acs.get(i);
-            double sum = 0.0;
-            for(Accession e : elite_ac.getAccessions()){
-                double dist = mr.calculate(a, e);
-                sum += dist;
-            }
-            // compute mean
-            sum = sum/elite_ac.size();
-            // store mean
-            distances.put(Integer.parseInt(a.getName().substring(1)), sum);
-        }
-
-        // print distances
-        System.out.println("---\nDistances to elite:");
-        for(Integer i : distances.keySet()){
-            System.out.print(distances.get(i)+",");
-        }
-
-        if(true){
-            return;
-        }
-        */
-        
-        /************** TMP !!!!! ***********************/
 
 
         if (!stuckTimeSpecified){
@@ -622,12 +547,12 @@ public final class CorehunterTextRunner {
         // set up the Mixed Replica advanced search option group
         mixrepSearchOpts.addOption( OptionBuilder.withArgName("tr")
 			      .hasArg()
-			      .withDescription("retain tr tabu replicas during search, defaults to " + DEFAULT_MIXREP_NR_OF_TABU_REPLICAS)
+			      .withDescription("maintain tr tabu replicas during search, defaults to " + DEFAULT_MIXREP_NR_OF_TABU_REPLICAS)
 			      .create("tabu_replicas") );
         
         mixrepSearchOpts.addOption( OptionBuilder.withArgName("ntr")
 			      .hasArg()
-			      .withDescription("retain ntr non-tabu replicas (Local Search, SimAn) during search, defaults to " + DEFAULT_MIXREP_NR_OF_NON_TABU_REPLICAS)
+			      .withDescription("maintain ntr non-tabu replicas (Local Search, SimAn) during search, defaults to " + DEFAULT_MIXREP_NR_OF_NON_TABU_REPLICAS)
 			      .create("non_tabu_replicas") );
         
         mixrepSearchOpts.addOption( OptionBuilder.withArgName("r")
@@ -1221,7 +1146,7 @@ public final class CorehunterTextRunner {
 
 	f.printHelp("measures (at least one must be specified):", measuresOpts);
 	System.out.println("");
-        f.printHelp("search type options (exactly one must be specified):", searchTypeOpts);
+        f.printHelp("search type options:", searchTypeOpts);
         System.out.println("");
         f.printHelp("common advanced search options:", commonSearchOpts);
 	System.out.println("");

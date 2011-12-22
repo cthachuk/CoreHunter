@@ -37,10 +37,25 @@ Assuming CoreHunter was built with `build.sh`:
 
     java -jar bin/corehunter-cli.jar -MR 0.7 -SH 0.3 data/examples/bul.csv mycoresubset.dat
 
+This uses the default Mixed Replica search algorithm. Alternatively, an optimization algorithm of choice can be selected, e.g.:
+
+    java -jar bin/corehunter-cli.jar -remc -MR 0.7 -SH 0.3 data/examples/bul.csv mycoresubset.dat
+
+Run the help command
+
+    java -jar bin/corehunter-cli.jar -help
+
+for an overview of all available algorithms and their parameters.
+
 More details and a manual can be found at http://corehunter.org
 
 
 # Questions
 
-Any questions about Core Hunter should be directed to Chris Thachuk
+Any questions about Core Hunter should be directed to
+
+Chris Thachuk
 <chris DOT thachuk AT gmail DOT com>
+
+Herman De Beukelaer
+<herman DOT debeukelaer AT gmail DOT com>
