@@ -105,7 +105,6 @@ public final class HeterozygousLociDiversity extends Measure {
 	    double markerAlleleTotals[][] = new double[markerCnt][];
 	    
 	    ListIterator<List<Double>> mItr = a1.getSSRValues().listIterator();
-	    ListIterator<Double> aItr = null;
 	    
 	    int i = 0;
 	    while (mItr.hasNext()) {

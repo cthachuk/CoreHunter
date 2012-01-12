@@ -14,13 +14,17 @@
 
 package org.cimmyt.corehunter.textui;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -229,6 +233,40 @@ public final class CorehunterTextRunner {
 	ac.addDataset(ds);
 
         int collectionSize = ac.size();
+        
+        /*** TMP: compute distance distribution of loaded dataset
+        System.out.println("Computing distance distribution...");
+        Map<Double, Integer> distanceFreq = new HashMap<Double, Integer>();
+        DistanceMeasure mr = new ModifiedRogersDistance(collectionSize);
+        List<Accession> acs = ac.getAccessions();
+        for(int i=0; i<collectionSize; i++){
+            System.out.print(".");
+            for(int j=i+1; j<collectionSize; j++){
+                double dist = mr.calculate(acs.get(i), acs.get(j));
+                Integer freq = distanceFreq.get(dist);
+                if(freq == null){
+                    distanceFreq.put(dist, 1);
+                } else {
+                    distanceFreq.put(dist, freq+1);
+                }
+            }
+        }
+        System.out.println("");
+        // write distance distribution to file with name 'distancefreq'
+        File distfreqoutput = new File("distancefreq");
+        try {
+            FileWriter wr = new FileWriter(distfreqoutput);
+            for(Double dist : distanceFreq.keySet()){
+                wr.write(dist + "\t" + distanceFreq.get(dist) + "\n");
+            }
+            wr.flush();
+            wr.close();
+        } catch (IOException ex) {
+            System.err.println("Error writing distance distribution file: " + ex);
+            System.exit(1);
+        }
+        System.exit(0);
+         END TMP ***/
 
 
         if (!stuckTimeSpecified){
@@ -1169,7 +1207,7 @@ public final class CorehunterTextRunner {
 
     private void showVersion() {
 	System.out.println("");
-	System.out.println("Corehunter version: 1.0beta");
+	System.out.println("Corehunter version: 2.0");
 	System.out.println("");
     }
 
