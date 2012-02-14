@@ -39,7 +39,7 @@ public class SimpleMonteCarloReplica extends Replica {
 
     public SimpleMonteCarloReplica(AccessionCollection ac, PseudoMeasure pm, Neighborhood nh,
                        int mcSteps, int repTime, int minSize, int maxSize, double T) {
-        super("SimAn", ac, pm, nh, mcSteps, repTime, minSize, maxSize);
+        super("MC", ac, pm, nh, mcSteps, repTime, minSize, maxSize);
 
         this.T = T;
         accepts = rejects = improvements = totSteps = 0;
