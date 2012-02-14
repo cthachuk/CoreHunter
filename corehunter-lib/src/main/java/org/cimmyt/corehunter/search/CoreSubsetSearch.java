@@ -63,12 +63,12 @@ public final class CoreSubsetSearch {
 						 double runtime, double minProg, double stuckTime,
                                                  int numReplicas, double minT, double maxT, int mcSteps) {
 	
-	SimAnReplica replicas[] = new SimAnReplica[numReplicas];
+	SimpleMonteCarloReplica replicas[] = new SimpleMonteCarloReplica[numReplicas];
 	Random r = new Random();
 	
 	for(int i=0; i<numReplicas; i++) {
 	    double T = minT + i*(maxT - minT)/(numReplicas - 1);
-	    replicas[i] = new SimAnReplica(ac, pm, nh, mcSteps, -1, sampleMin, sampleMax, T);
+	    replicas[i] = new SimpleMonteCarloReplica(ac, pm, nh, mcSteps, -1, sampleMin, sampleMax, T);
             replicas[i].init();
 	}
 	
@@ -132,8 +132,8 @@ public final class CoreSubsetSearch {
 
 	    // consider swapping temperatures of adjacent replicas
  	    for(int i=swapBase; i<numReplicas-1; i+=2) {
-		SimAnReplica m = replicas[i];
-		SimAnReplica n = replicas[i+1];
+		SimpleMonteCarloReplica m = replicas[i];
+		SimpleMonteCarloReplica n = replicas[i+1];
 	
 		double B_m = 1.0 / (K_b2 * m.getTemperature());
 		double B_n = 1.0 / (K_b2 * n.getTemperature());
@@ -154,7 +154,7 @@ public final class CoreSubsetSearch {
 		
 		if (swap) {
 		    m.swapTemperature(n);
-		    SimAnReplica temp = replicas[i];
+		    SimpleMonteCarloReplica temp = replicas[i];
 		    replicas[i] = replicas[i+1];
 		    replicas[i+1] = temp;
 		}
@@ -183,12 +183,12 @@ public final class CoreSubsetSearch {
 						 double runtime, double minProg, double stuckTime,
                                                  int numReplicas, double minT, double maxT, int mcSteps) {
 
-	SimAnReplica replicas[] = new SimAnReplica[numReplicas];
+	SimpleMonteCarloReplica replicas[] = new SimpleMonteCarloReplica[numReplicas];
 	Random r = new Random();
 
 	for(int i=0; i<numReplicas; i++) {
 	    double T = minT + i*(maxT - minT)/(numReplicas - 1);
-	    replicas[i] = new SimAnReplica(ac, pm, nh.clone(), mcSteps, -1, sampleMin, sampleMax, T);
+	    replicas[i] = new SimpleMonteCarloReplica(ac, pm, nh.clone(), mcSteps, -1, sampleMin, sampleMax, T);
             replicas[i].init();
 	}
 
@@ -273,8 +273,8 @@ public final class CoreSubsetSearch {
 
 	    // consider swapping temperatures of adjacent replicas
  	    for(int i=swapBase; i<numReplicas-1; i+=2) {
-		SimAnReplica m = replicas[i];
-		SimAnReplica n = replicas[i+1];
+		SimpleMonteCarloReplica m = replicas[i];
+		SimpleMonteCarloReplica n = replicas[i+1];
 
 		double B_m = 1.0 / (K_b2 * m.getTemperature());
 		double B_n = 1.0 / (K_b2 * n.getTemperature());
@@ -295,7 +295,7 @@ public final class CoreSubsetSearch {
 
 		if (swap) {
 		    m.swapTemperature(n);
-		    SimAnReplica temp = replicas[i];
+		    SimpleMonteCarloReplica temp = replicas[i];
 		    replicas[i] = replicas[i+1];
 		    replicas[i+1] = temp;
 		}
@@ -1373,7 +1373,7 @@ public final class CoreSubsetSearch {
 
                     for(List<Accession> child : children){
                         // New REMC replicas
-                        Replica rep = new SimAnReplica(ac, pm, randNh.clone(), NR_OF_LS_STEPS, -1,
+                        Replica rep = new SimpleMonteCarloReplica(ac, pm, randNh.clone(), NR_OF_LS_STEPS, -1,
                                     sampleMin, sampleMax, minSimAnTemp + rg.nextDouble()*(maxSimAnTemp-minSimAnTemp));
                         nrOfNonTabus++;
                         

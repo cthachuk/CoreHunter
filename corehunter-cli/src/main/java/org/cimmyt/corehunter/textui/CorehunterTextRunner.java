@@ -14,6 +14,7 @@
 
 package org.cimmyt.corehunter.textui;
 
+import com.sun.tools.javac.util.Pair;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -23,8 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -236,18 +235,31 @@ public final class CorehunterTextRunner {
         
         /*** TMP: compute distance distribution of loaded dataset
         System.out.println("Computing distance distribution...");
-        Map<Double, Integer> distanceFreq = new HashMap<Double, Integer>();
+        List<Pair<Integer, List<Pair<Accession, Accession>>>> distanceFreq = new ArrayList<Pair<Integer, List<Pair<Accession, Accession>>>>(101);
+        for(int i=0; i<101; i++){
+            distanceFreq.add(null);
+        }
         DistanceMeasure mr = new ModifiedRogersDistance(collectionSize);
         List<Accession> acs = ac.getAccessions();
         for(int i=0; i<collectionSize; i++){
             System.out.print(".");
             for(int j=i+1; j<collectionSize; j++){
-                double dist = mr.calculate(acs.get(i), acs.get(j));
-                Integer freq = distanceFreq.get(dist);
-                if(freq == null){
-                    distanceFreq.put(dist, 1);
+                Accession acc1 = acs.get(i);
+                Accession acc2 = acs.get(j);
+                double dist = mr.calculate(acc1, acc2);
+                int dist_int = (int) (dist/0.01);
+                Pair<Integer, List<Pair<Accession, Accession>>> freqPair = distanceFreq.get(dist_int);
+                if(freqPair == null){
+                    List<Pair<Accession, Accession>> list = new ArrayList<Pair<Accession, Accession>>();
+                    list.add(new Pair<Accession, Accession>(acc1, acc2));
+                    freqPair = new Pair<Integer, List<Pair<Accession, Accession>>>(1, list);
+                    distanceFreq.set(dist_int, freqPair);
                 } else {
-                    distanceFreq.put(dist, freq+1);
+                    List<Pair<Accession, Accession>> list = freqPair.snd;
+                    list.add(new Pair<Accession, Accession>(acc1, acc2));
+                    Integer newFreq = freqPair.fst+1;
+                    freqPair = new Pair<Integer, List<Pair<Accession, Accession>>>(newFreq, list);
+                    distanceFreq.set(dist_int, freqPair);
                 }
             }
         }
@@ -256,8 +268,17 @@ public final class CorehunterTextRunner {
         File distfreqoutput = new File("distancefreq");
         try {
             FileWriter wr = new FileWriter(distfreqoutput);
-            for(Double dist : distanceFreq.keySet()){
-                wr.write(dist + "\t" + distanceFreq.get(dist) + "\n");
+            for(int i=0; i<distanceFreq.size(); i++){
+                Pair<Integer, List<Pair<Accession, Accession>>> freqPair = distanceFreq.get(i);
+                if(freqPair != null){
+                    wr.write(((double)i)/100 + " -- " + freqPair.fst + " times:\n\n");
+                    List<Pair<Accession, Accession>> list = freqPair.snd;
+                    for(int j=0; j<list.size(); j++){
+                        Pair<Accession, Accession> accPair = list.get(j);
+                        wr.write(accPair.fst.getName() + " <-> " + accPair.snd.getName() + "\n");
+                    }
+                    wr.write("\n");
+                }
             }
             wr.flush();
             wr.close();
