@@ -14,10 +14,6 @@
 
 package org.cimmyt.corehunter.textui;
 
-import com.sun.tools.javac.util.Pair;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
