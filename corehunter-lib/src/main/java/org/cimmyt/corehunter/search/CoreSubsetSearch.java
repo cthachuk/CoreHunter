@@ -1094,7 +1094,7 @@ public final class CoreSubsetSearch {
         // LS can perform more steps than tabu because each step is very fast,
         // only sampling one neighbor instead of Tabu which samples about ac.size()
         // neighbors in each step to select the (heursistic) best neighbor!
-        final int NR_OF_LS_STEPS = ac.size();//(nrOfTabuSteps * ac.size()); TO DO: add as parameter!!!
+        final int NR_OF_LS_STEPS = ac.size();
 
         double bestScore = -Double.MAX_VALUE;
         List<Accession> bestCore = new ArrayList<Accession>();

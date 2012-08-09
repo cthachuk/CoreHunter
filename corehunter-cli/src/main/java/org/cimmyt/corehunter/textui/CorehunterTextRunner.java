@@ -655,12 +655,12 @@ public final class CorehunterTextRunner {
 
         mixrepSearchOpts.addOption( OptionBuilder.withArgName("t")
 			      .hasArg()
-			      .withDescription("minimum temperature of Simulated Annealing replicas, defaults to " + DEFAULT_MIXREP_MIN_SIMAN_TEMP)
+			      .withDescription("minimum temperature of Single Monte Carlo replicas, defaults to " + DEFAULT_MIXREP_MIN_SIMAN_TEMP)
 			      .create("min_t") );
 
         mixrepSearchOpts.addOption( OptionBuilder.withArgName("t")
 			      .hasArg()
-			      .withDescription("maximum temperature of Simulated Annealing replicas, defaults to " + DEFAULT_MIXREP_MAX_SIMAN_TEMP)
+			      .withDescription("maximum temperature of Single Monte Carlo replicas, defaults to " + DEFAULT_MIXREP_MAX_SIMAN_TEMP)
 			      .create("max_t") );
 
         // set up the LR Search advanced search option group
